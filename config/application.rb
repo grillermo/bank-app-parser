@@ -38,5 +38,11 @@ module BankAppParser
 
     # Don't generate system test files.
     config.generators.system_tests = nil
+
+    # Use Solid Queue (database-backed) for Active Job, and Solid Cache
+    # (database-backed) for Rails.cache, both against the primary database.
+    config.active_job.queue_adapter = :solid_queue
+    config.solid_queue.connects_to = { database: { writing: :primary } }
+    config.cache_store = :solid_cache_store
   end
 end
