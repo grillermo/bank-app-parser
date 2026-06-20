@@ -83,8 +83,8 @@ curl -X POST \
 
 # Response
 {
-  "batch_id": "550e8400-e29b-41d4-a716-446655440000",
-  "status": "processing"
+  "batch_id": 1,
+  "status": "pending"
 }
 
 # View dashboard
@@ -120,7 +120,7 @@ IngestJob
   ├ OcrClient.extract
   └ TransactionImporter.import
     ↓
-GET /dashboard
+GET /
   ↓
 DashboardController
   ↓

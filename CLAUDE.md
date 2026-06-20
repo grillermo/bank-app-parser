@@ -29,7 +29,7 @@ bin/rails solid_queue:start
 | `app/controllers/application_controller.rb` | Base controller |
 | `app/controllers/ingest_controller.rb` | POST /ingest — saves multipart images, enqueues IngestJob |
 | `app/controllers/dashboard_controller.rb` | GET / — renders Inertia React dashboard with DashboardStats |
-| `app/controllers/health_controller.rb` | GET /health — database + Solid Queue + OpenAI API status checks |
+| `app/controllers/health_controller.rb` | GET /health — database + Solid Queue + OpenAI API key presence checks |
 
 ### Jobs
 
