@@ -10,9 +10,16 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_20_165947) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_20_170913) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "batches", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.text "error_message"
+    t.integer "status", default: 0, null: false
+    t.datetime "updated_at", null: false
+  end
 
   create_table "solid_cache_entries", force: :cascade do |t|
     t.integer "byte_size", null: false
@@ -146,10 +153,25 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_20_165947) do
     t.index ["key"], name: "index_solid_queue_semaphores_on_key", unique: true
   end
 
+  create_table "transactions", force: :cascade do |t|
+    t.decimal "amount", precision: 12, scale: 2, null: false
+    t.string "bank_name", default: "unknown"
+    t.bigint "batch_id", null: false
+    t.string "cardname", default: "unknown"
+    t.string "category", default: "unknown"
+    t.datetime "created_at", null: false
+    t.date "date", null: false
+    t.string "description", null: false
+    t.string "merchant", default: "unknown"
+    t.datetime "updated_at", null: false
+    t.index ["batch_id"], name: "index_transactions_on_batch_id"
+  end
+
   add_foreign_key "solid_queue_blocked_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_claimed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_failed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_ready_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_recurring_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_scheduled_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
+  add_foreign_key "transactions", "batches"
 end
