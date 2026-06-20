@@ -13,4 +13,5 @@ Rails.application.routes.draw do
   # root "posts#index"
 
   post "/ingest", to: "ingest#create"
+  get "/health", to: "health#show"
 end
