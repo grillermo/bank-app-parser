@@ -1,0 +1,20 @@
+#!/bin/bash
+set -a
+[ -f .env ] && . .env
+set +a
+
+SESSION="bank_app_parser"
+tmux kill-session -t "$SESSION" 2>/dev/null
+
+tmux new-session -d -s "$SESSION" -n main
+tmux split-window -h -t "$SESSION"
+tmux split-window -v -t "$SESSION"
+
+# Pane 0: Vite dev server (HMR + Tailwind regeneration)
+tmux send-keys -t "$SESSION:main.0" "source .env && bin/vite dev" C-m
+# Pane 1: Rails server
+tmux send-keys -t "$SESSION:main.1" "source .env && bin/rails s -p \$RAILS_PORT -b 0.0.0.0" C-m
+# Pane 2: Solid Queue worker (logs to STDOUT)
+tmux send-keys -t "$SESSION:main.2" "source .env && RAILS_LOG_TO_STDOUT=1 bin/rails solid_queue:start" C-m
+
+tmux attach -t "$SESSION"
