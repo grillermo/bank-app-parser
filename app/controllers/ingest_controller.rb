@@ -6,19 +6,16 @@ class IngestController < ActionController::API
   end
 
   def create
-    files = Array(params[:images]).reject(&:blank?)
-    return render(json: { error: "no images" }, status: :unprocessable_entity) if files.empty?
+    image = params[:image]
+    return render(json: { error: "no image" }, status: :unprocessable_entity) if image.blank? || image.is_a?(Array)
 
-    batch = Batch.create!
-    dir = self.class.batch_dir(batch.id)
-    FileUtils.mkdir_p(dir)
-    files.each_with_index do |file, i|
-      File.binwrite(dir.join(format("%03d.png", i)), file.read)
-    end
-    Rails.logger.debug("[Ingest] saved #{files.size} images for batch #{batch.id} to #{dir}")
-    IngestJob.perform_later(batch.id)
+    batch = Batch.open_for_ingest
+    batch.append_image!(image)
+    Rails.logger.debug("[Ingest] saved image #{batch.next_image_index} for batch #{batch.id} to #{self.class.batch_dir(batch.id)}")
 
     render json: { batch_id: batch.id, status: batch.status }, status: :accepted
+  rescue Batch::FullBatchError
+    render json: { error: "batch image limit reached" }, status: :unprocessable_entity
   end
 
   private

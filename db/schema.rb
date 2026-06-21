@@ -10,15 +10,19 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_20_170913) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_20_180000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
   create_table "batches", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.text "error_message"
+    t.integer "next_image_index", default: 0, null: false
+    t.string "scheduled_job_id"
     t.integer "status", default: 0, null: false
     t.datetime "updated_at", null: false
+    t.index ["scheduled_job_id"], name: "index_batches_on_scheduled_job_id"
+    t.index ["status"], name: "index_batches_on_pending_status", unique: true, where: "(status = 0)"
   end
 
   create_table "solid_cache_entries", force: :cascade do |t|
