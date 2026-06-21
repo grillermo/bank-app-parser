@@ -42,7 +42,7 @@ export default function Dashboard({ top_categories, top_merchants, largest_purch
           {largest_purchases.map((p, i) => (
             <li key={i} className="flex justify-between py-1">
               <span>{p.date} — {p.merchant}</span>
-              <span className="font-mono">{p.amount.toFixed(2)}</span>
+              <span className="font-mono">{Math.abs(p.amount).toFixed(2)}</span>
             </li>
           ))}
         </ul>

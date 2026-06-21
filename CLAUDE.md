@@ -20,6 +20,8 @@ bin/rails console
 bin/rails solid_queue:start
 ```
 
+This developer's shell exports `RAILS_ENV=production` globally, so any Rails command that touches the database needs an explicit `RAILS_ENV=development` (or `RAILS_ENV=test` for specs) prefix, e.g. `RAILS_ENV=development bin/rails db:migrate`, to avoid hitting the (nonexistent) production DB.
+
 ## Architecture Map
 
 ### Controllers

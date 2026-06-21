@@ -51,7 +51,10 @@ cp .env.example .env
 #   RAILS_PORT=3000
 
 # Create and migrate databases
-bin/rails db:create db:migrate
+# Note: if your shell exports RAILS_ENV=production globally, prefix DB-touching
+# commands with RAILS_ENV=development (or RAILS_ENV=test for specs) to avoid
+# hitting the (nonexistent) production database, e.g.:
+RAILS_ENV=development bin/rails db:create db:migrate
 
 # Launch dev server (Vite, Rails, Solid Queue in tmux)
 ./serve-dev
