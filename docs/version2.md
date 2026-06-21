@@ -59,3 +59,12 @@ Are you looking for a ready-made tool you can run from the command line today, o
 
 
 https://gemini.google.com/share/b7930c2e926f
+
+
+Next features
+establish baseline with best model largest image
+then check if the cheapest model and smallest image produce the same results, if yes done
+if not, check the next pixels size with the cheapest model and then more pixels and when original size and cheapest model faied, try next model smallest sizes and so on until reaching results parity with baeeline
+
+
+add TransactionController include an index view where all transactions can be seen paginated(cursor based) 50 items per page, the headers are all the transactions attributes, one last column holds edit, remove action icons that point to their respective views, remove confirms with javascript’s native confirm, and edit opens a form where all fields are editable with plain text.
