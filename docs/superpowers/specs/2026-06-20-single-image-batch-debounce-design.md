@@ -20,28 +20,52 @@ Migration adds to `batches`:
 
 ## Controller Flow (`IngestController#create`)
 
-1. Accept `params[:image]` (single uploaded file, not an array). Render 422 if blank.
-2. `find_or_create_pending_batch`:
+1. Accept `params[:image]` (single uploaded file, not an array). Render
+   `{ error: "no image" }` with `422 Unprocessable Entity` if blank (matches the existing
+   `{ error: "no images" }` convention, singularized).
+2. `find_or_create_pending_batch` (single retry, not a loop — the partial unique index
+   guarantees at most one pending batch exists, so a retry only ever needs to happen once: the
+   loser of a create race simply finds the winner's row on the next query):
    ```ruby
-   Batch.where(status: :pending).order(created_at: :desc).first || Batch.create!
+   def find_or_create_pending_batch
+     Batch.where(status: :pending).first || Batch.create!
+   rescue ActiveRecord::RecordNotUnique
+     Batch.where(status: :pending).first!
+   end
    ```
-   Rescue `ActiveRecord::RecordNotUnique` (from the partial unique index) by re-querying for the
-   pending batch — a concurrent request may have just created it.
-3. Inside `batch.with_lock` (row lock via `SELECT ... FOR UPDATE`):
+   (No `order` needed — the unique index means there's at most one match.)
+3. Inside `batch.with_lock` (row lock via `SELECT ... FOR UPDATE`; this is a *separate* guard
+   from the partial unique index above — the index prevents two *pending batches* from existing,
+   `with_lock` serializes concurrent *appends to the same batch* and guarantees a fresh reload of
+   `next_image_index`/`scheduled_job_id` before they're read):
    - Write the file to `IngestController.batch_dir(batch.id)` as
      `format("%03d.png", batch.next_image_index)`.
-   - If `batch.scheduled_job_id` is present, look up and cancel the previously scheduled job:
+   - If `batch.scheduled_job_id` is present, attempt to cancel the previously scheduled job:
      ```ruby
      SolidQueue::Job.find_by(active_job_id: batch.scheduled_job_id)&.discard
      ```
-     Rescue `SolidQueue::Execution::UndiscardableError` — raised if the job has already been
-     claimed/started running. In that case, skip rescheduling; the in-flight job will process
-     whatever's already on disk in `batch_dir` at the time it reads it. This is a narrow,
-     accepted race window given manual/low-frequency usage.
-   - Enqueue a new job: `IngestJob.set(wait: 15.minutes).perform_later(batch.id)`.
-   - Persist `next_image_index: index + 1` and `scheduled_job_id: job.job_id` on the batch.
-4. Respond `{ batch_id: batch.id, status: batch.status }` with `202 Accepted` (unchanged from
-   current behavior).
+     - **If discard succeeds (or there was nothing to cancel):** enqueue a new job —
+       `IngestJob.set(wait: 15.minutes).perform_later(batch.id)` — and persist its `job.job_id`
+       as the new `scheduled_job_id`.
+     - **If discard raises `SolidQueue::Execution::UndiscardableError`** (job already claimed —
+       i.e. a worker has picked it up and is about to call `perform`): do **not** enqueue a
+       replacement job, and do not overwrite `scheduled_job_id`. The in-flight job will process
+       whatever it finds in `batch_dir` when it reads it. This is the only intentionally accepted
+       race in this design: the window is between a worker claiming the job and
+       `ImagePreprocessor.process` reading the directory listing — essentially job-startup
+       overhead, not the job's actual runtime — so an image landing in that window is rare and,
+       if it happens, is silently dropped when `IngestJob`'s `ensure` block deletes `batch_dir`.
+       Deliberately not solved here: handling it correctly would require either two jobs
+       in flight for one batch (which then risks the second job reprocessing an already
+       `completed` batch and clobbering its status, since `IngestJob#perform` has no idempotency
+       guard) or a manifest/snapshot mechanism. Out of scope for this iteration; revisit if this
+       proves to matter in practice.
+   - Persist `next_image_index: index + 1` on the batch (always, regardless of the discard
+     outcome above).
+4. Respond `{ batch_id: batch.id, status: batch.status }` with `202 Accepted`. Note this is a
+   contract change from current behavior: previously each request produced a new batch_id;
+   now multiple requests within the debounce window share the same batch_id and `pending`
+   status until the job actually fires.
 
 ## Job Execution Concurrency (`IngestJob`)
 
