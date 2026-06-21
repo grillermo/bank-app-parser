@@ -133,9 +133,20 @@ git commit -m "feat: add Batch.find_or_create_pending!"
 
 **Files:**
 - Create: `app/services/batch_scheduler.rb`
+- Modify: `spec/rails_helper.rb`
 - Test: `spec/services/batch_scheduler_spec.rb`
 
-- [ ] **Step 1: Write the failing tests**
+- [ ] **Step 1: Enable the `travel` time-helper for specs**
+
+The test below uses `travel` to assert a reschedule advances the job's `scheduled_at`.
+`spec/rails_helper.rb` doesn't currently include `ActiveSupport::Testing::TimeHelpers`. Add it
+inside the `RSpec.configure do |config|` block (anywhere among the other `config.` lines):
+
+```ruby
+config.include ActiveSupport::Testing::TimeHelpers
+```
+
+- [ ] **Step 2: Write the failing tests**
 
 Create `spec/services/batch_scheduler_spec.rb`:
 
@@ -194,12 +205,12 @@ RSpec.describe BatchScheduler do
 end
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [ ] **Step 3: Run tests to verify they fail**
 
 Run: `bundle exec rspec spec/services/batch_scheduler_spec.rb`
 Expected: FAIL — `NameError: uninitialized constant BatchScheduler`
 
-- [ ] **Step 3: Implement**
+- [ ] **Step 4: Implement**
 
 Create `app/services/batch_scheduler.rb`:
 
@@ -228,15 +239,15 @@ class BatchScheduler
 end
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [ ] **Step 5: Run tests to verify they pass**
 
 Run: `bundle exec rspec spec/services/batch_scheduler_spec.rb`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
-git add app/services/batch_scheduler.rb spec/services/batch_scheduler_spec.rb
+git add app/services/batch_scheduler.rb spec/services/batch_scheduler_spec.rb spec/rails_helper.rb
 git commit -m "feat: add BatchScheduler to debounce IngestJob scheduling"
 ```
 
