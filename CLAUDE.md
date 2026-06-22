@@ -29,7 +29,7 @@ This developer's shell exports `RAILS_ENV=production` globally, so any Rails com
 | File | Responsibility |
 |------|-----------------|
 | `app/controllers/application_controller.rb` | Base controller |
-| `app/controllers/ingest_controller.rb` | POST /ingest — saves multipart images, enqueues IngestJob |
+| `app/controllers/ingest_controller.rb` | POST /ingest — accepts one image per request, appends to the open pending batch via `Batch#append_image!`, returns batch id/status |
 | `app/controllers/dashboard_controller.rb` | GET / — renders Inertia React dashboard with DashboardStats |
 | `app/controllers/health_controller.rb` | GET /health — database + Solid Queue + OpenAI API key presence checks |
 
@@ -38,7 +38,14 @@ This developer's shell exports `RAILS_ENV=production` globally, so any Rails com
 | File | Responsibility |
 |------|-----------------|
 | `app/jobs/application_job.rb` | Base job |
-| `app/jobs/ingest_job.rb` | Orchestrates preprocess → stitch → OCR → import; cleans up temp files; notifies Slack on error |
+| `app/jobs/ingest_job.rb` | Runs after a batch's debounce window elapses; supersede-checks against `scheduled_job_id` before claiming the batch; orchestrates preprocess → stitch → OCR → import; cleans up temp files; notifies Slack on error. `limits_concurrency to: 1` (one ingest run at a time) |
+
+### Models
+
+| File | Responsibility |
+|------|-----------------|
+| `app/models/batch.rb` | Owns debounced ingestion: `open_for_ingest` finds/creates the single pending batch, `append_image!` writes the image and reschedules `IngestJob` |
+| `app/models/transaction.rb` | Transaction rows; deduplication via `dedup_create!` |
 
 ### Services
 
@@ -91,6 +98,12 @@ Dashboard and reports always show "spend" by taking `ABS(amount)` where `amount 
 ### Transaction Deduplication
 
 `Transaction.dedup_create!(batch:, attrs:)` ensures idempotency: same transaction row cannot be inserted twice, even if the pipeline runs multiple times for the same screenshot batch.
+
+### Debounced Batch Ingestion
+
+`/ingest` accepts one image per request, not a multipart batch. Each call appends to the single open `pending` batch (`Batch.open_for_ingest`, enforced by a unique partial index on `status = 0`) and reschedules `IngestJob` with `wait: 15.minutes` (`Batch::INGEST_DELAY`), discarding the previously scheduled Solid Queue job. A batch is capped at `Batch::MAX_IMAGES` (15); exceeding it raises `Batch::FullBatchError` (422).
+
+When `IngestJob` finally runs, it checks `scheduled_job_id` against its own `job_id` to detect supersession (a newer image arrived and rescheduled the job) and bails out if superseded. `limits_concurrency to: 1` on the job prevents two ingest runs from overlapping.
 
 ### Temp File Cleanup
 

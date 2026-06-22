@@ -4,12 +4,12 @@ A Rails 8 application that ingests bank statement screenshots, automatically ext
 
 ## Purpose
 
-Upload bank statement screenshots → automatically preprocess, stitch, and OCR them → create transaction records → explore spending via an Inertia React dashboard with 4 visualizations (top categories, merchants, purchases, and monthly trends).
+Upload bank statement screenshots one at a time → app batches them with a debounce window → automatically preprocess, stitch, and OCR them → create transaction records → explore spending via an Inertia React dashboard with 4 visualizations (top categories, merchants, purchases, and monthly trends).
 
 ## Architecture
 
-1. **Ingest Endpoint** (`/ingest`) — Token-authenticated multipart upload handler
-2. **IngestJob** — Background job orchestrating the pipeline
+1. **Ingest Endpoint** (`/ingest`) — Token-authenticated single-image upload handler; appends to the open pending batch and (re)schedules ingestion after a 15-minute inactivity window (max 15 images per batch)
+2. **IngestJob** — Background job orchestrating the pipeline once a batch goes idle
 3. **ImagePreprocessor** — Resizes to <768px, converts to greyscale
 4. **ImageStitcher** — Stitches multiple screenshots using Python vendored tool
 5. **OcrClient** — Extracts transaction rows via OpenAI vision API
@@ -77,18 +77,26 @@ RAILS_ENV=development bin/rails db:create db:migrate
 INGEST_TOKEN="dev-local-token"
 ENDPOINT="http://localhost:3000/ingest"
 
-# Upload screenshots
+# Upload screenshots one at a time — each call appends to the same
+# open (pending) batch and resets its 15-minute inactivity timer
 curl -X POST \
   -H "Authorization: Bearer $INGEST_TOKEN" \
-  -F "images[]=@statement-page-1.png" \
-  -F "images[]=@statement-page-2.png" \
+  -F "image=@statement-page-1.png" \
   "$ENDPOINT"
 
-# Response
+curl -X POST \
+  -H "Authorization: Bearer $INGEST_TOKEN" \
+  -F "image=@statement-page-2.png" \
+  "$ENDPOINT"
+
+# Response (same batch_id while the batch stays open)
 {
   "batch_id": 1,
   "status": "pending"
 }
+
+# IngestJob runs automatically once the batch is idle for 15 minutes
+# (or once it hits the 15-image cap)
 
 # View dashboard
 # http://localhost:3000
@@ -113,10 +121,13 @@ bin/rails console
 ## Architecture Overview
 
 ```
-POST /ingest
+POST /ingest (one image per call)
   ↓
 IngestController (token auth)
-  ↓ enqueue
+  ↓ Batch.open_for_ingest / append_image!
+  ↓ reschedule IngestJob, wait: 15 min (cap: 15 images/batch)
+  ↓ ... repeat while images keep arriving ...
+  ↓ 15 min idle (or batch full) → job runs, supersede check
 IngestJob
   ├ ImagePreprocessor.process
   ├ ImageStitcher.stitch
