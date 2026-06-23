@@ -6,14 +6,11 @@ class IngestController < ActionController::API
   end
 
   def create
-    image_base64 = params[:image]
-    return render(json: { error: "no image" }, status: :unprocessable_entity) if image_base64.blank? || !image_base64.is_a?(String)
-
-    image_bytes = decode_base64(image_base64)
-    return render(json: { error: "invalid base64 image" }, status: :unprocessable_entity) if image_bytes.nil?
+    image = params[:image]
+    return render(json: { error: "no image" }, status: :unprocessable_entity) if image.blank? || image.is_a?(Array)
 
     batch = Batch.open_for_ingest
-    batch.append_image!(image_bytes)
+    batch.append_image!(image)
     Rails.logger.debug("[Ingest] saved image #{batch.next_image_index} for batch #{batch.id} to #{self.class.batch_dir(batch.id)}")
 
     render json: { batch_id: batch.id, status: batch.status }, status: :accepted
@@ -22,12 +19,6 @@ class IngestController < ActionController::API
   end
 
   private
-
-  def decode_base64(value)
-    Base64.decode64(value)
-  rescue ArgumentError
-    nil
-  end
 
   def authenticate
     header = request.headers["Authorization"].to_s
