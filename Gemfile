@@ -51,7 +51,7 @@ group :development do
   gem "web-console"
 end
 
-gem "dotenv-rails", groups: [:development, :test]
+gem "dotenv-rails", groups: [:development, :test, :production]
 gem "http"
 gem "inertia_rails"
 gem "vite_rails"

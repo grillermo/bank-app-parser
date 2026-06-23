@@ -23,6 +23,7 @@ class IngestController < ActionController::API
   def authenticate
     header = request.headers["Authorization"].to_s
     token = header.split(" ", 2).last
+    puts "Token #{token} and env #{ENV["INGEST_TOKEN"]}"
     unless ActiveSupport::SecurityUtils.secure_compare(token.to_s, ENV["INGEST_TOKEN"].to_s)
       render json: { error: "unauthorized" }, status: :unauthorized
     end
