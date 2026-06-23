@@ -29,7 +29,7 @@ This developer's shell exports `RAILS_ENV=production` globally, so any Rails com
 | File | Responsibility |
 |------|-----------------|
 | `app/controllers/application_controller.rb` | Base controller |
-| `app/controllers/ingest_controller.rb` | POST /ingest — accepts one image per request, appends to the open pending batch via `Batch#append_image!`, returns batch id/status |
+| `app/controllers/ingest_controller.rb` | POST /ingest — accepts one base64-encoded image per request (`params[:image]`), decodes it, appends to the open pending batch via `Batch#append_image!`, returns batch id/status |
 | `app/controllers/dashboard_controller.rb` | GET / — renders Inertia React dashboard with DashboardStats |
 | `app/controllers/health_controller.rb` | GET /health — database + Solid Queue + OpenAI API key presence checks |
 

@@ -15,18 +15,28 @@ RSpec.describe "POST /ingest", type: :request do
   before { allow(ENV).to receive(:[]).and_call_original }
   before { allow(ENV).to receive(:[]).with("INGEST_TOKEN").and_return(token) }
 
-  def image
-    Rack::Test::UploadedFile.new(StringIO.new("fakebytes"), "image/png", original_filename: "shot.png")
+  def image_base64
+    Base64.strict_encode64("fakebytes")
   end
 
   it "rejects requests without the bearer token" do
-    post "/ingest", params: { images: [image] }
+    post "/ingest", params: { image: image_base64 }
     expect(response).to have_http_status(:unauthorized)
   end
 
-  it "accepts images, creates a batch, enqueues the job, saves files" do
+  it "rejects blank image" do
+    post "/ingest", params: { image: "" }, headers: { "Authorization" => "Bearer #{token}" }
+    expect(response).to have_http_status(:unprocessable_entity)
+  end
+
+  it "rejects invalid base64" do
+    post "/ingest", params: { image: "not-valid-base64!!!" }, headers: { "Authorization" => "Bearer #{token}" }
+    expect(response).to have_http_status(:unprocessable_entity)
+  end
+
+  it "accepts a base64 image, creates a batch, enqueues the job, saves the file" do
     expect {
-      post "/ingest", params: { images: [image, image] },
+      post "/ingest", params: { image: image_base64 },
            headers: { "Authorization" => "Bearer #{token}" }
     }.to have_enqueued_job(IngestJob).and change(Batch, :count).by(1)
 
@@ -34,7 +44,7 @@ RSpec.describe "POST /ingest", type: :request do
     body = JSON.parse(response.body)
     batch_id = body["batch_id"]
     dir = IngestController.batch_dir(batch_id)
-    expect(Dir.glob(dir.join("*.png")).sort).to eq([dir.join("000.png").to_s, dir.join("001.png").to_s])
+    expect(File.binread(dir.join("000.png"))).to eq("fakebytes")
   ensure
     FileUtils.rm_rf(IngestController.batch_dir(body["batch_id"])) if defined?(body) && body
   end

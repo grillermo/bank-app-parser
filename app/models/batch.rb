@@ -12,13 +12,13 @@ class Batch < ApplicationRecord
     pending.first!
   end
 
-  def append_image!(file)
+  def append_image!(bytes)
     with_lock do
       raise FullBatchError if next_image_index >= MAX_IMAGES
 
       dir = IngestController.batch_dir(id)
       FileUtils.mkdir_p(dir)
-      File.binwrite(dir.join(format("%03d.png", next_image_index)), file.read)
+      File.binwrite(dir.join(format("%03d.png", next_image_index)), bytes)
 
       increment!(:next_image_index)
       reschedule_ingest!
