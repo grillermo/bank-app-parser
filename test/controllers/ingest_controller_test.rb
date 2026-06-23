@@ -27,6 +27,20 @@ class IngestControllerTest < ActionDispatch::IntegrationTest
     assert_path_exists IngestController.batch_dir(batch.id).join("000.png")
   end
 
+  test "development uploads enqueue ingestion immediately" do
+    with_rails_env("development") do
+      post "/ingest", params: { image: uploaded_image("first") }, headers: authorization_header
+    end
+
+    assert_response :accepted
+    batch = Batch.find(response.parsed_body.fetch("batch_id"))
+    solid_job = SolidQueue::Job.find_by!(active_job_id: batch.scheduled_job_id)
+
+    assert_operator solid_job.scheduled_at, :<=, 1.minute.from_now
+    assert_equal 1, SolidQueue::ReadyExecution.where(job_id: solid_job.id).count
+    assert_equal 0, SolidQueue::ScheduledExecution.where(job_id: solid_job.id).count
+  end
+
   test "subsequent single image appends to pending batch and replaces scheduled ingestion" do
     post "/ingest", params: { image: uploaded_image("first") }, headers: authorization_header
     batch = Batch.find(response.parsed_body.fetch("batch_id"))
@@ -55,6 +69,15 @@ class IngestControllerTest < ActionDispatch::IntegrationTest
 
   def authorization_header
     { "Authorization" => "Bearer #{@token}" }
+  end
+
+  def with_rails_env(name)
+    original_env = Rails.env
+
+    Rails.singleton_class.define_method(:env) { ActiveSupport::EnvironmentInquirer.new(name) }
+    yield
+  ensure
+    Rails.singleton_class.define_method(:env) { original_env }
   end
 
   def uploaded_image(name)

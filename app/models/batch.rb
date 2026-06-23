@@ -34,9 +34,15 @@ class Batch < ApplicationRecord
   def reschedule_ingest!
     return unless discard_scheduled_ingest
 
-    job = IngestJob.set(wait: INGEST_DELAY).perform_later(id)
+    job = enqueue_ingest
 
     update!(scheduled_job_id: job.job_id)
+  end
+
+  def enqueue_ingest
+    return IngestJob.perform_later(id) if Rails.env.development?
+
+    IngestJob.set(wait: INGEST_DELAY).perform_later(id)
   end
 
   def discard_scheduled_ingest

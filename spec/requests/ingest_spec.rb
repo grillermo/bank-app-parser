@@ -24,9 +24,9 @@ RSpec.describe "POST /ingest", type: :request do
     expect(response).to have_http_status(:unauthorized)
   end
 
-  it "accepts images, creates a batch, enqueues the job, saves files" do
+  it "accepts an image, creates a batch, enqueues the job, saves the file" do
     expect {
-      post "/ingest", params: { images: [image, image] },
+      post "/ingest", params: { image: image },
            headers: { "Authorization" => "Bearer #{token}" }
     }.to have_enqueued_job(IngestJob).and change(Batch, :count).by(1)
 
@@ -34,7 +34,7 @@ RSpec.describe "POST /ingest", type: :request do
     body = JSON.parse(response.body)
     batch_id = body["batch_id"]
     dir = IngestController.batch_dir(batch_id)
-    expect(Dir.glob(dir.join("*.png")).sort).to eq([dir.join("000.png").to_s, dir.join("001.png").to_s])
+    expect(Dir.glob(dir.join("*.png")).sort).to eq([dir.join("000.png").to_s])
   ensure
     FileUtils.rm_rf(IngestController.batch_dir(body["batch_id"])) if defined?(body) && body
   end
