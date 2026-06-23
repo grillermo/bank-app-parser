@@ -24,4 +24,11 @@ RSpec.describe Transaction do
     expect(result).to be_nil
     expect(Transaction.count).to eq(1)
   end
+
+  it "does not treat same description+date+amount as duplicate when bank_name differs" do
+    Transaction.dedup_create!(batch: batch, attrs: attrs)
+    result = Transaction.dedup_create!(batch: batch, attrs: attrs.merge(bank_name: "chase"))
+    expect(result).not_to be_nil
+    expect(Transaction.count).to eq(2)
+  end
 end

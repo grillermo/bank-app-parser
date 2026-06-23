@@ -4,8 +4,10 @@ class Transaction < ApplicationRecord
 
   def self.dedup_create!(batch:, attrs:)
     attrs = attrs.symbolize_keys
+    bank_name = attrs[:bank_name] || column_defaults["bank_name"]
     return nil if batch.transactions.exists?(
-      date: attrs[:date], description: attrs[:description], amount: attrs[:amount]
+      description: attrs[:description], bank_name: bank_name,
+      date: attrs[:date], amount: attrs[:amount]
     )
     batch.transactions.create!(attrs)
   end
