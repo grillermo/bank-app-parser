@@ -2,6 +2,11 @@ default: &default
   adapter: postgresql
   encoding: unicode
   pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  host: <%= ENV.fetch("DATABASE_HOST", "localhost") %>
+  port: <%= ENV.fetch("DATABASE_PORT", 5432) %>
+  username: <%= ENV["DATABASE_USER"] %>
+  password: <%= ENV["DATABASE_PASSWORD"] %>
+
 
 development:
   <<: *default
@@ -14,5 +19,3 @@ test:
 production:
   <<: *default
   database: bank_app_parser_production
-  username: bank_app_parser
-  password: <%= ENV["BANK_APP_PARSER_DATABASE_PASSWORD"] %>

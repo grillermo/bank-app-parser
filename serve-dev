@@ -3,7 +3,7 @@ set -a
 [ -f .env ] && . .env
 set +a
 
-SESSION="bank_app_parser"
+SESSION="bank-app-parser"
 tmux kill-session -t "$SESSION" 2>/dev/null
 
 tmux new-session -d -s "$SESSION" -n main
