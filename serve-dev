@@ -15,6 +15,6 @@ tmux send-keys -t "$SESSION:main.0" "source .env && bin/vite dev" C-m
 # Pane 1: Rails server
 tmux send-keys -t "$SESSION:main.1" "source .env && bin/rails s -p \$RAILS_PORT -b 0.0.0.0" C-m
 # Pane 2: Solid Queue worker (logs to STDOUT)
-tmux send-keys -t "$SESSION:main.2" "source .env && RAILS_LOG_TO_STDOUT=1 bin/rails solid_queue:start" C-m
+tmux send-keys -t "$SESSION:main.2" "source .env && PGGSSENCMODE='disable' RAILS_LOG_TO_STDOUT=1 bundle exec bin/jobs" C-m
 
 tmux attach -t "$SESSION"
