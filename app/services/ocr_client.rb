@@ -22,9 +22,12 @@ class OcrClient
   TXT
 
   def self.extract(image_path:)
+    model = ENV["OPENAI_MODEL"]
+    raise "OPENAI_MODEL is not set" if model.to_s.strip.empty?
+
     b64 = Base64.strict_encode64(File.binread(image_path))
     payload = {
-      model: ENV["OPENAI_MODEL"],
+      model: model,
       messages: [{
         role: "user",
         content: [
@@ -33,7 +36,7 @@ class OcrClient
         ]
       }]
     }
-    Rails.logger.debug("[OCR] posting #{image_path} to OpenAI model #{ENV['OPENAI_MODEL']}")
+    Rails.logger.debug("[OCR] posting #{image_path} to OpenAI model #{model}")
     resp = HTTP.auth("Bearer #{ENV['OPENAI_API_KEY']}").post(ENDPOINT, json: payload)
     raise "OCR request failed: #{resp.to_s}" unless resp.status.success?
 
