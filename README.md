@@ -79,15 +79,13 @@ ENDPOINT="http://localhost:3000/ingest"
 
 # Upload screenshots one at a time — each call appends to the same
 # open (pending) batch and resets its 15-minute inactivity timer
-curl -X POST \
-  -H "Authorization: Bearer $INGEST_TOKEN" \
-  -F "image=@statement-page-1.png" \
-  "$ENDPOINT"
+http --form POST "$ENDPOINT" \
+  "Authorization:Bearer $INGEST_TOKEN" \
+  image@statement-page-1.png
 
-curl -X POST \
-  -H "Authorization: Bearer $INGEST_TOKEN" \
-  -F "image=@statement-page-2.png" \
-  "$ENDPOINT"
+http --form POST "$ENDPOINT" \
+  "Authorization:Bearer $INGEST_TOKEN" \
+  image@statement-page-2.png
 
 # Response (same batch_id while the batch stays open)
 {
