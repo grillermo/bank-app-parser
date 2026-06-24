@@ -31,4 +31,18 @@ RSpec.describe Transaction do
     expect(result).not_to be_nil
     expect(Transaction.count).to eq(2)
   end
+
+  describe "status enum" do
+    it "defaults new records to pending" do
+      t = batch.transactions.create!(attrs)
+      expect(t).to be_pending
+    end
+
+    it "exposes posted and canceled scopes" do
+      batch.transactions.create!(attrs.merge(status: :posted, description: "P"))
+      batch.transactions.create!(attrs.merge(status: :canceled, description: "C"))
+      expect(Transaction.posted.pluck(:description)).to eq(["P"])
+      expect(Transaction.canceled.pluck(:description)).to eq(["C"])
+    end
+  end
 end

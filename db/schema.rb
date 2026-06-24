@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_20_180000) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_23_000001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -167,8 +167,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_20_180000) do
     t.date "date", null: false
     t.string "description", null: false
     t.string "merchant", default: "unknown"
+    t.integer "status", default: 0, null: false
     t.datetime "updated_at", null: false
     t.index ["batch_id"], name: "index_transactions_on_batch_id"
+    t.index ["status"], name: "index_transactions_on_status"
   end
 
   add_foreign_key "solid_queue_blocked_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
