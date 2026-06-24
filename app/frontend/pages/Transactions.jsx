@@ -23,10 +23,25 @@ export default function Transactions({ transactions, next_cursor }) {
 
   return (
     <Layout>
-      <div className="mx-auto max-w-5xl p-6 space-y-4">
-        <h1 className="text-2xl font-bold">Transactions</h1>
+      <div className="mx-auto max-w-5xl px-4 py-6 sm:p-6 space-y-4">
+        <h1 className="text-xl sm:text-2xl font-bold">Transactions</h1>
 
-        <table className="w-full text-sm border-collapse">
+        {/* Mobile: stacked cards */}
+        <ul className="space-y-3 sm:hidden">
+          {rows.map((t) => (
+            <li key={t.id} className="rounded border p-3 space-y-1">
+              <div className="flex justify-between gap-2">
+                <span className="font-medium truncate">{t.merchant || t.description}</span>
+                <span className="font-mono shrink-0">{t.amount.toFixed(2)}</span>
+              </div>
+              <div className="text-xs text-gray-500">{t.date} · {t.category}</div>
+              <div className="text-xs text-gray-500">{t.bank_name} · {t.cardname}</div>
+            </li>
+          ))}
+        </ul>
+
+        {/* Desktop: table */}
+        <table className="hidden sm:table w-full text-sm border-collapse">
           <thead>
             <tr className="border-b text-left">
               <th className="py-1 pr-2">Date</th>

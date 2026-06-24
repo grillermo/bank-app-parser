@@ -21,30 +21,31 @@ export default function Dashboard({ top_categories, top_merchants, largest_purch
       label: s.category, data: s.data, backgroundColor: COLORS[i % COLORS.length],
     })),
   }
-  const stacked = { scales: { x: { stacked: true }, y: { stacked: true } } }
+  const base = { responsive: true, maintainAspectRatio: false }
+  const stacked = { ...base, scales: { x: { stacked: true }, y: { stacked: true } } }
 
   return (
     <Layout>
-    <div className="mx-auto max-w-5xl p-6 space-y-10">
-      <h1 className="text-2xl font-bold">Spending Overview</h1>
+    <div className="mx-auto max-w-5xl px-4 py-6 sm:p-6 space-y-8 sm:space-y-10">
+      <h1 className="text-xl sm:text-2xl font-bold">Spending Overview</h1>
 
       <section>
         <h2 className="mb-2 font-semibold">Top Categories</h2>
-        <div className="max-w-md"><Pie data={pieData} /></div>
+        <div className="relative w-full h-72 sm:h-96"><Pie data={pieData} options={base} /></div>
       </section>
 
       <section>
         <h2 className="mb-2 font-semibold">Top Merchants</h2>
-        <Bar data={merchantData} />
+        <div className="relative w-full h-72 sm:h-96"><Bar data={merchantData} options={base} /></div>
       </section>
 
       <section>
         <h2 className="mb-2 font-semibold">Largest Purchases</h2>
         <ul className="divide-y">
           {largest_purchases.map((p, i) => (
-            <li key={i} className="flex justify-between py-1">
-              <span>{p.date} — {p.merchant}</span>
-              <span className="font-mono">{Math.abs(p.amount).toFixed(2)}</span>
+            <li key={i} className="flex justify-between gap-2 py-1 text-sm sm:text-base">
+              <span className="truncate">{p.date} — {p.merchant}</span>
+              <span className="font-mono shrink-0">{Math.abs(p.amount).toFixed(2)}</span>
             </li>
           ))}
         </ul>
@@ -52,7 +53,7 @@ export default function Dashboard({ top_categories, top_merchants, largest_purch
 
       <section>
         <h2 className="mb-2 font-semibold">Spend by Category Over Time</h2>
-        <Bar data={tsData} options={stacked} />
+        <div className="relative w-full h-80 sm:h-96"><Bar data={tsData} options={stacked} /></div>
       </section>
     </div>
     </Layout>
