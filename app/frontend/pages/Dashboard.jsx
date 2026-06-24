@@ -1,5 +1,6 @@
 import { Chart as ChartJS, ArcElement, BarElement, CategoryScale, LinearScale, Tooltip, Legend } from "chart.js"
 import { Pie, Bar } from "react-chartjs-2"
+import Layout from "../components/Layout"
 
 ChartJS.register(ArcElement, BarElement, CategoryScale, LinearScale, Tooltip, Legend)
 
@@ -23,6 +24,7 @@ export default function Dashboard({ top_categories, top_merchants, largest_purch
   const stacked = { scales: { x: { stacked: true }, y: { stacked: true } } }
 
   return (
+    <Layout>
     <div className="mx-auto max-w-5xl p-6 space-y-10">
       <h1 className="text-2xl font-bold">Spending Overview</h1>
 
@@ -53,5 +55,6 @@ export default function Dashboard({ top_categories, top_merchants, largest_purch
         <Bar data={tsData} options={stacked} />
       </section>
     </div>
+    </Layout>
   )
 }
