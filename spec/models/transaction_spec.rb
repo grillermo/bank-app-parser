@@ -45,4 +45,26 @@ RSpec.describe Transaction do
       expect(Transaction.canceled.pluck(:description)).to eq(["C"])
     end
   end
+
+  describe "status promotion on dedup" do
+    it "promotes pending to posted on re-import" do
+      Transaction.dedup_create!(batch: batch, attrs: attrs.merge(status: "pending"))
+      result = Transaction.dedup_create!(batch: batch, attrs: attrs.merge(status: "posted"))
+      expect(result).to be_nil
+      expect(Transaction.count).to eq(1)
+      expect(Transaction.first).to be_posted
+    end
+
+    it "promotes posted to canceled" do
+      Transaction.dedup_create!(batch: batch, attrs: attrs.merge(status: "posted"))
+      Transaction.dedup_create!(batch: batch, attrs: attrs.merge(status: "canceled"))
+      expect(Transaction.first).to be_canceled
+    end
+
+    it "never regresses posted back to pending" do
+      Transaction.dedup_create!(batch: batch, attrs: attrs.merge(status: "posted"))
+      Transaction.dedup_create!(batch: batch, attrs: attrs.merge(status: "pending"))
+      expect(Transaction.first).to be_posted
+    end
+  end
 end

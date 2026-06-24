@@ -6,10 +6,21 @@ class Transaction < ApplicationRecord
   def self.dedup_create!(batch:, attrs:)
     attrs = attrs.symbolize_keys
     bank_name = attrs[:bank_name] || column_defaults["bank_name"]
-    return nil if batch.transactions.exists?(
+    existing = batch.transactions.find_by(
       description: attrs[:description], bank_name: bank_name,
       date: attrs[:date], amount: attrs[:amount]
     )
+    if existing
+      promote_status!(existing, attrs[:status])
+      return nil
+    end
     batch.transactions.create!(attrs)
+  end
+
+  def self.promote_status!(record, incoming)
+    return if incoming.blank?
+    incoming = incoming.to_s
+    return unless statuses.key?(incoming)
+    record.update!(status: incoming) if statuses[incoming] > statuses[record.status]
   end
 end
