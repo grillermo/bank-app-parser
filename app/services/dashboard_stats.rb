@@ -1,6 +1,6 @@
 class DashboardStats
   def initialize(scope = Transaction.all)
-    @spend = scope.where("amount < 0")
+    @spend = scope.where("amount < 0").posted
   end
 
   def to_h

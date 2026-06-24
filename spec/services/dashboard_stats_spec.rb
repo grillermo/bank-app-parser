@@ -3,10 +3,12 @@ require "rails_helper"
 RSpec.describe DashboardStats do
   let(:batch) { Batch.create! }
   before do
-    batch.transactions.create!(date: "2025-10-01", description: "A", merchant: "Store1", amount: -100, category: "Food")
-    batch.transactions.create!(date: "2025-10-02", description: "B", merchant: "Store2", amount: -300, category: "Shopping")
-    batch.transactions.create!(date: "2025-11-01", description: "C", merchant: "Store1", amount: -100, category: "Food")
-    batch.transactions.create!(date: "2025-11-02", description: "D", merchant: "Boss",   amount:  500, category: "Income")
+    batch.transactions.create!(date: "2025-10-01", description: "A", merchant: "Store1", amount: -100, category: "Food", status: :posted)
+    batch.transactions.create!(date: "2025-10-02", description: "B", merchant: "Store2", amount: -300, category: "Shopping", status: :posted)
+    batch.transactions.create!(date: "2025-11-01", description: "C", merchant: "Store1", amount: -100, category: "Food", status: :posted)
+    batch.transactions.create!(date: "2025-11-02", description: "D", merchant: "Boss",   amount:  500, category: "Income", status: :posted)
+    batch.transactions.create!(date: "2025-10-03", description: "E", merchant: "Store2", amount: -999, category: "Shopping", status: :canceled)
+    batch.transactions.create!(date: "2025-10-04", description: "F", merchant: "Store2", amount: -999, category: "Shopping", status: :pending)
   end
 
   let(:stats) { DashboardStats.new.to_h }
@@ -30,5 +32,10 @@ RSpec.describe DashboardStats do
     expect(stats[:category_timeseries][:months]).to eq(["2025-10", "2025-11"])
     food = stats[:category_timeseries][:series].find { |s| s[:category] == "Food" }
     expect(food[:data]).to eq([100.0, 100.0])
+  end
+
+  it "excludes canceled and pending rows from spend" do
+    expect(stats[:top_merchants].first).to eq({ merchant: "Store2", total: 300.0 })
+    expect(stats[:largest_purchases].map { |p| p[:amount] }).not_to include(-999.0)
   end
 end
