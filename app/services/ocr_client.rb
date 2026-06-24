@@ -19,6 +19,7 @@ class OcrClient
     - "cardname": infer the name of the credit card from the UI, if not sure output 'unknown'
     - "amount": The amount as a float (negative for expenditures/debits, positive for income/credits)
     - "category": A best-guess category based on the vendor name (e.g., Food, Utilities, Transport, Shopping)
+    - "status": one of "pending", "posted", "canceled". Use "canceled" if the row is shown as canceled, reversed, voided, or refunded. Use "posted" if it is clearly cleared, charged, or settled. Use "pending" if it is shown as processing/pending OR if the status is ambiguous or unreadable (this is the default).
   TXT
 
   def self.extract(image_path:)
