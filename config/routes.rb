@@ -13,6 +13,8 @@ Rails.application.routes.draw do
   root "dashboard#index"
 
   get "/transactions", to: "transactions#index"
+  get   "/pending",          to: "transactions#pending"
+  patch "/transactions/:id", to: "transactions#update"
 
   post "/ingest", to: "ingest#create"
   get "/health", to: "health#show"
